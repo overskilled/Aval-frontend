@@ -123,31 +123,81 @@ export function Header({ lang, setLang, t, onHome }) {
   const [open, setOpen] = useState(false);
   // When we're on a non-landing page, anchor links must navigate back to "/" first.
   const anchorBase = onHome ? "" : "/";
+
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  // Close drawer on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const close = () => setOpen(false);
+  const signInLabel = lang === "fr" ? "Se connecter" : "Sign in";
+
   return (
-    <header className="site-header">
+    <header className={`site-header${open ? " is-open" : ""}`}>
       <div className="container row">
-        <Link to="/" className="brand" aria-label="Aval">
+        <Link to="/" className="brand" aria-label="Aval" onClick={close}>
           <SealMini />
           <span className="word">Aval</span>
         </Link>
-        <nav className={`nav${open ? " open" : ""}`} aria-label={lang === "fr" ? "Navigation principale" : "Primary navigation"}>
-          <a href={`${anchorBase}#problem`} onClick={() => setOpen(false)}>{t.nav.problem}</a>
-          <a href={`${anchorBase}#how`} onClick={() => setOpen(false)}>{t.nav.how}</a>
-          <Link to="/manufacturers" onClick={() => setOpen(false)}>{t.nav.manufacturers}</Link>
-          <Link to="/regulators" onClick={() => setOpen(false)}>{t.nav.regulators}</Link>
-          <Link to="/trust" onClick={() => setOpen(false)}>{t.nav.trust}</Link>
-          <a href={`${anchorBase}#pilot`} onClick={() => setOpen(false)}>{t.nav.pilot}</a>
-          <a href={`${anchorBase}#about`} onClick={() => setOpen(false)}>{t.nav.about}</a>
+
+        <nav
+          className={`nav${open ? " open" : ""}`}
+          id="primary-nav"
+          aria-label={lang === "fr" ? "Navigation principale" : "Primary navigation"}
+        >
+          <a href={`${anchorBase}#problem`} onClick={close}>{t.nav.problem}</a>
+          <a href={`${anchorBase}#how`} onClick={close}>{t.nav.how}</a>
+          <Link to="/manufacturers" onClick={close}>{t.nav.manufacturers}</Link>
+          <Link to="/regulators" onClick={close}>{t.nav.regulators}</Link>
+          <Link to="/trust" onClick={close}>{t.nav.trust}</Link>
+          <a href={`${anchorBase}#pilot`} onClick={close}>{t.nav.pilot}</a>
+          <a href={`${anchorBase}#about`} onClick={close}>{t.nav.about}</a>
+
+          {/* Mobile-only footer of the drawer: sign-in CTA. */}
+          <div className="nav-mobile-extras">
+            <Link to="/login" className="btn btn--sm nav-mobile-cta" onClick={close}>
+              {signInLabel}<span className="arrow">→</span>
+            </Link>
+          </div>
         </nav>
+
         <div className="header-actions">
           <div className="lang-toggle" role="group" aria-label="Language">
             <button aria-pressed={lang === "fr"} onClick={() => setLang("fr")}>FR</button>
             <button aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
           </div>
-          <Link to="/login" className="btn btn--ghost btn--sm header-signin">{lang === "fr" ? "Se connecter" : "Sign in"}</Link>
-          <button className="menu-btn" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{open ? "✕" : "≡"}</button>
+          <Link to="/login" className="btn btn--ghost btn--sm header-signin">{signInLabel}</Link>
+          <button
+            className={`menu-btn${open ? " is-open" : ""}`}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="primary-nav"
+            aria-label={open ? (lang === "fr" ? "Fermer le menu" : "Close menu") : (lang === "fr" ? "Ouvrir le menu" : "Open menu")}
+          >
+            <span className="menu-btn-bars" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </span>
+          </button>
         </div>
       </div>
+
+      {/* Backdrop — closes the drawer when tapped. */}
+      <div
+        className={`nav-backdrop${open ? " is-open" : ""}`}
+        onClick={close}
+        aria-hidden="true"
+      />
     </header>
   );
 }
