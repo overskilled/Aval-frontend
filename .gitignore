@@ -1,0 +1,7 @@
+node_modules
+dist
+.vite
+_extracted
+design-payload.bin
+.DS_Store
+*.log
