@@ -89,6 +89,9 @@ export const api = {
   // Public verification — citizens scanning a QR.
   verifyCode: (token) => request("/verify", { method: "POST", body: { token } }),
 
+  // Public landing-page contact form → email forwarded to CONTACT_INBOX_EMAIL.
+  submitContact: (payload) => request("/contact", { method: "POST", body: payload }),
+
   // Login OTP (2FA on every non-admin connection)
   verifyLoginOtp: ({ email, code }) =>
     request("/auth/verify-login-otp", {

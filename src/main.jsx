@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import App from "./App.jsx";
+import Manufacturers from "./pages/landing/Manufacturers.jsx";
+import Regulators from "./pages/landing/Regulators.jsx";
+import Trust from "./pages/landing/Trust.jsx";
 import Login from "./auth/Login.jsx";
 import Signup from "./auth/Signup.jsx";
 import OtpVerify from "./auth/OtpVerify.jsx";
@@ -22,6 +25,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <AuthProvider>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/manufacturers" element={<Manufacturers />} />
+          <Route path="/regulators" element={<Regulators />} />
+          <Route path="/trust" element={<Trust />} />
           {/* Public verification page — citizen-facing, no auth, the QR target. */}
           <Route path="/v" element={<Verify />} />
           <Route element={<AuthLayout />}>

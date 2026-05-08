@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import AVAL_I18N from "./i18n.js";
+import { api } from "./auth/api.js";
 
 // ——————————————————————————————————————————————
 // Hooks
@@ -23,7 +25,7 @@ function useInView(opts = { threshold: 0.15 }) {
   return [ref, seen];
 }
 
-function useLang() {
+export function useLang() {
   const [lang, setLang] = useState(() => {
     try {
       const saved = localStorage.getItem("aval.lang");
@@ -117,31 +119,32 @@ function HeroSeal({ outerText, innerText }) {
 // ——————————————————————————————————————————————
 // Header
 // ——————————————————————————————————————————————
-function Header({ lang, setLang, t }) {
+export function Header({ lang, setLang, t, onHome }) {
   const [open, setOpen] = useState(false);
+  // When we're on a non-landing page, anchor links must navigate back to "/" first.
+  const anchorBase = onHome ? "" : "/";
   return (
     <header className="site-header">
       <div className="container row">
-        <a href="#top" className="brand" aria-label="Aval">
+        <Link to="/" className="brand" aria-label="Aval">
           <SealMini />
           <span className="word">Aval</span>
-        </a>
+        </Link>
         <nav className={`nav${open ? " open" : ""}`} aria-label={lang === "fr" ? "Navigation principale" : "Primary navigation"}>
-          <a href="#problem" onClick={() => setOpen(false)}>{t.nav.problem}</a>
-          <a href="#how" onClick={() => setOpen(false)}>{t.nav.how}</a>
-          <a href="#gov" onClick={() => setOpen(false)}>{t.nav.gov}</a>
-          <a href="#ind" onClick={() => setOpen(false)}>{t.nav.ind}</a>
-          <a href="#cit" onClick={() => setOpen(false)}>{t.nav.cit}</a>
-          <a href="#pilot" onClick={() => setOpen(false)}>{t.nav.pilot}</a>
-          <a href="#about" onClick={() => setOpen(false)}>{t.nav.about}</a>
+          <a href={`${anchorBase}#problem`} onClick={() => setOpen(false)}>{t.nav.problem}</a>
+          <a href={`${anchorBase}#how`} onClick={() => setOpen(false)}>{t.nav.how}</a>
+          <Link to="/manufacturers" onClick={() => setOpen(false)}>{t.nav.manufacturers}</Link>
+          <Link to="/regulators" onClick={() => setOpen(false)}>{t.nav.regulators}</Link>
+          <Link to="/trust" onClick={() => setOpen(false)}>{t.nav.trust}</Link>
+          <a href={`${anchorBase}#pilot`} onClick={() => setOpen(false)}>{t.nav.pilot}</a>
+          <a href={`${anchorBase}#about`} onClick={() => setOpen(false)}>{t.nav.about}</a>
         </nav>
         <div className="header-actions">
           <div className="lang-toggle" role="group" aria-label="Language">
             <button aria-pressed={lang === "fr"} onClick={() => setLang("fr")}>FR</button>
             <button aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
           </div>
-          <a href="/login" className="btn btn--ghost btn--sm header-signin">{lang === "fr" ? "Se connecter" : "Sign in"}</a>
-          <a href="#contact" className="btn btn--sm">{t.nav.contact}<span className="arrow">→</span></a>
+          <Link to="/login" className="btn btn--ghost btn--sm header-signin">{lang === "fr" ? "Se connecter" : "Sign in"}</Link>
           <button className="menu-btn" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{open ? "✕" : "≡"}</button>
         </div>
       </div>
@@ -212,7 +215,7 @@ function Ticker({ lang }) {
 // ——————————————————————————————————————————————
 // Section header (eyebrow + rule + title + lede)
 // ——————————————————————————————————————————————
-function SectionHead({ eyebrow, title, lede, id }) {
+export function SectionHead({ eyebrow, title, lede, id }) {
   const [ref, seen] = useInView();
   return (
     <header ref={ref} id={id} className={`sec-head${seen ? " in-view" : ""}`}>
@@ -636,32 +639,29 @@ function About({ t }) {
     <section className="section" id="about">
       <div className="container">
         <SectionHead eyebrow={t.about.eyebrow} title={t.about.title} />
-        <div className="about-grid">
-          <div className="founder">
-            <div className="kicker">{t.about.founder_kicker}</div>
-            {t.about.founder_name ? <div className="name">{t.about.founder_name}</div> : null}
-            <p className="role">{t.about.founder_role}</p>
-            <ul className="creds">
-              {t.about.founder_creds.map((c, i) => <li key={i}>{c}</li>)}
-            </ul>
-          </div>
-          <div>
-            <div className="hiring">
-              <span className="pill"><span></span>{t.about.hiring_status}</span>
-              <h4>{t.about.hiring_role}</h4>
-              <p>{t.about.hiring_body}</p>
-            </div>
-            <div className="sdg-block">
-              <div className="title">{t.about.sdg_title}</div>
-              <div className="sdg-grid">
-                {t.about.sdg.map((s) => (
-                  <div className="sdg" key={s.n}>
-                    <div className="n">{s.n}</div>
-                    <div className="t">{s.t}</div>
-                  </div>
-                ))}
+
+        <div className="team-statement">
+          <div className="kicker">{t.about.team_kicker}</div>
+          <p className="team-lede">{t.about.team_lede}</p>
+          <div className="team-facts">
+            {t.about.team_facts.map((f, i) => (
+              <div className="team-fact" key={i}>
+                <div className="k">{f.k}</div>
+                <div className="v">{f.v}</div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="sdg-block">
+          <div className="title">{t.about.sdg_title}</div>
+          <div className="sdg-grid">
+            {t.about.sdg.map((s) => (
+              <div className="sdg" key={s.n}>
+                <div className="n">{s.n}</div>
+                <div className="t">{s.t}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -673,7 +673,38 @@ function About({ t }) {
 // Contact
 // ——————————————————————————————————————————————
 function Contact({ t }) {
-  const [sent, setSent] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [org, setOrg] = useState("");
+  const [role, setRole] = useState("");
+  const [country, setCountry] = useState("Cameroun");
+  const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [errMsg, setErrMsg] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    if (status === "sending") return;
+    setStatus("sending");
+    setErrMsg("");
+    try {
+      await api.submitContact({
+        name: name.trim(),
+        email: email.trim(),
+        organisation: org.trim() || undefined,
+        role: role || undefined,
+        country: country.trim() || undefined,
+        message: message.trim() || undefined,
+        website,
+      });
+      setStatus("sent");
+    } catch (err) {
+      setStatus("error");
+      setErrMsg(err?.message || t.contact.fields.error);
+    }
+  }
+
   return (
     <section className="section" id="contact">
       <div className="container">
@@ -690,23 +721,29 @@ function Contact({ t }) {
               {t.contact.email}
             </a>
           </div>
-          <form className="brief" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
-            {sent ? (
-              <div className="sent">{t.contact.fields.sent}</div>
-            ) : null}
-            <label>{t.contact.fields.name}<input type="text" required /></label>
-            <label>{t.contact.fields.org}<input type="text" required /></label>
+          <form className="brief" onSubmit={submit} noValidate>
+            {status === "sent" ? <div className="sent">{t.contact.fields.sent}</div> : null}
+            {status === "error" ? <div className="sent" style={{ borderColor: "var(--err)", color: "var(--err)" }}>{errMsg}</div> : null}
+            <label>{t.contact.fields.name}<input type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={status === "sent"} /></label>
+            <label>{t.contact.fields.email}<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={status === "sent"} /></label>
+            <label>{t.contact.fields.org}<input type="text" value={org} onChange={(e) => setOrg(e.target.value)} disabled={status === "sent"} /></label>
             <label>{t.contact.fields.role}
-              <select required defaultValue="">
+              <select value={role} onChange={(e) => setRole(e.target.value)} disabled={status === "sent"}>
                 <option value="" disabled>—</option>
                 {t.contact.role_options.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             </label>
-            <label>{t.contact.fields.country}<input type="text" defaultValue="Cameroun" /></label>
-            <label className="full">{t.contact.fields.message}<textarea /></label>
+            <label>{t.contact.fields.country}<input type="text" value={country} onChange={(e) => setCountry(e.target.value)} disabled={status === "sent"} /></label>
+            <label className="full">{t.contact.fields.message}<textarea value={message} onChange={(e) => setMessage(e.target.value)} disabled={status === "sent"} /></label>
+            {/* Honeypot — hidden from users, must stay empty. */}
+            <label style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }} aria-hidden="true" tabIndex={-1}>
+              Website<input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            </label>
             <div className="full" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-              <button type="submit" className="btn">{t.contact.fields.submit}<span className="arrow">→</span></button>
-              <span className="ph-tag">[mock submission]</span>
+              <button type="submit" className="btn" disabled={status === "sending" || status === "sent"}>
+                {status === "sending" ? t.contact.fields.sending : t.contact.fields.submit}
+                <span className="arrow">→</span>
+              </button>
             </div>
             <div className="brief-direct">{t.contact.direct} · <b>{t.contact.email}</b></div>
           </form>
@@ -719,7 +756,7 @@ function Contact({ t }) {
 // ——————————————————————————————————————————————
 // Footer
 // ——————————————————————————————————————————————
-function Footer({ t, lang, setLang }) {
+export function Footer({ t, lang, setLang }) {
   return (
     <footer className="footer">
       <div className="container">
@@ -731,11 +768,11 @@ function Footer({ t, lang, setLang }) {
           <div>
             <h5>{lang === "fr" ? "Sections" : "Sections"}</h5>
             <ul>
-              <li><a href="#problem">{t.nav.problem}</a></li>
-              <li><a href="#how">{t.nav.how}</a></li>
-              <li><a href="#gov">{t.nav.gov}</a></li>
-              <li><a href="#ind">{t.nav.ind}</a></li>
-              <li><a href="#cit">{t.nav.cit}</a></li>
+              <li><a href="/#problem">{t.nav.problem}</a></li>
+              <li><a href="/#how">{t.nav.how}</a></li>
+              <li><Link to="/manufacturers">{t.nav.manufacturers}</Link></li>
+              <li><Link to="/regulators">{t.nav.regulators}</Link></li>
+              <li><Link to="/trust">{t.nav.trust}</Link></li>
             </ul>
           </div>
           <div>
@@ -772,7 +809,7 @@ export default function App() {
   const t = AVAL_I18N[lang];
   return (
     <div className="shell" data-screen-label="Aval landing page">
-      <Header lang={lang} setLang={setLang} t={t} />
+      <Header lang={lang} setLang={setLang} t={t} onHome />
       <Hero t={t} lang={lang} />
       <Ticker lang={lang} />
       <Problem t={t} />
