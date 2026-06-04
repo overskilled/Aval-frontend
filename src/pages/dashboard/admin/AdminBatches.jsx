@@ -94,6 +94,45 @@ function Inner() {
     }
   }
 
+  // Blockchain anchor state — fetched whenever a generated batch is opened.
+  const [anchor, setAnchor] = useState(null);
+  const [anchorLoading, setAnchorLoading] = useState(false);
+  const [anchorBusy, setAnchorBusy] = useState(false);
+
+  useEffect(() => {
+    setAnchor(null);
+    if (!selected || selected.status !== "generated") return;
+    let cancelled = false;
+    (async () => {
+      setAnchorLoading(true);
+      try {
+        const a = await api.blockchainGetAnchor(selected.id);
+        if (!cancelled) setAnchor(a);
+      } catch (e) {
+        // Surface real server errors so the admin sees what went wrong.
+        // A genuine "no anchor yet" returns { anchored: false }, never throws.
+        if (!cancelled) {
+          setAnchor({ anchored: false, _probeError: e.message });
+        }
+      } finally {
+        if (!cancelled) setAnchorLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selected]);
+
+  async function runAnchor() {
+    setAnchorBusy(true); setError("");
+    try {
+      const a = await api.blockchainAnchorBatch(selected.id);
+      setAnchor(a);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setAnchorBusy(false);
+    }
+  }
+
   const visible = filter === "all" ? list : list.filter((b) => b.status === filter);
 
   const columns = [
@@ -205,7 +244,17 @@ function Inner() {
               </label>
             </ConfirmStep>
           ) : (
-            <BatchDetail batch={selected} error={error} />
+            <>
+              <BatchDetail batch={selected} error={error} />
+              {selected.status === "generated" ? (
+                <BlockchainBlock
+                  anchor={anchor}
+                  loading={anchorLoading}
+                  busy={anchorBusy}
+                  onAnchor={runAnchor}
+                />
+              ) : null}
+            </>
           )
         ) : null}
       </Drawer>
@@ -230,6 +279,91 @@ function BatchActionsFooter({ status, onApprove, onReject, onDownloadCsv, onDown
         </>
       )}
     </>
+  );
+}
+
+function BlockchainBlock({ anchor, loading, busy, onAnchor }) {
+  if (loading) {
+    return (
+      <div style={{ marginTop: 22, padding: 12, border: "1px dashed var(--muted)", borderRadius: 8 }}>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>⛓️  Vérification de l'ancrage blockchain…</div>
+      </div>
+    );
+  }
+
+  const isAnchored = anchor && anchor.anchored !== false && anchor.txHash;
+  const status = anchor?.status;
+  const isPending = status === "pending" || status === "broadcasted";
+
+  return (
+    <div style={{ marginTop: 22, padding: 14, border: "1px solid var(--border, #2c2c2c)", borderRadius: 8 }}>
+      <h3 style={{ margin: 0, fontSize: 14, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        ⛓️ Ancrage blockchain
+      </h3>
+      {!isAnchored ? (
+        <>
+          {anchor?._probeError ? (
+            <div className="alert" style={{ marginTop: 8, fontSize: 12 }}>
+              ⚠️ Impossible de lire le statut blockchain : {anchor._probeError}
+            </div>
+          ) : null}
+          <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>
+            Ce lot n'a pas encore d'empreinte sur la blockchain. L'ancrage publie la racine de Merkle des codes sur le contrat <code>AvalRegistry</code>,
+            créant une preuve publique, immuable et horodatée.
+          </p>
+          <button
+            type="button"
+            className="btn"
+            onClick={onAnchor}
+            disabled={busy}
+            style={{ marginTop: 6 }}
+          >
+            {busy ? "Ancrage en cours…" : "Ancrer sur la blockchain →"}
+          </button>
+        </>
+      ) : (
+        <table className="simple" style={{ marginTop: 8 }}>
+          <tbody>
+            <tr>
+              <th>Statut</th>
+              <td>
+                <span className={`status-pill ${status === "confirmed" ? "approved" : isPending ? "pending" : ""}`}>
+                  {status}
+                </span>
+                {isPending ? (
+                  <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>
+                    (vérification en cours, ~30s)
+                  </span>
+                ) : null}
+              </td>
+            </tr>
+            <tr>
+              <th>Codes ancrés</th>
+              <td>{anchor.totalCodes ?? "—"}</td>
+            </tr>
+            <tr>
+              <th>Racine Merkle</th>
+              <td><code style={{ fontSize: 11, wordBreak: "break-all" }}>{anchor.merkleRoot}</code></td>
+            </tr>
+            <tr>
+              <th>Transaction</th>
+              <td>
+                {anchor.polygonscanUrl?.startsWith("http") ? (
+                  <a href={anchor.polygonscanUrl} target="_blank" rel="noreferrer">
+                    Voir sur l'explorateur ↗
+                  </a>
+                ) : (
+                  <code style={{ fontSize: 11, wordBreak: "break-all" }}>{anchor.txHash}</code>
+                )}
+              </td>
+            </tr>
+            {anchor.blockNumber ? (
+              <tr><th>Block</th><td>{anchor.blockNumber}</td></tr>
+            ) : null}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 
