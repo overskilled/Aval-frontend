@@ -182,6 +182,17 @@ export const api = {
   },
   adminGetBatchExport: (id) =>
     request(`/admin/batches/${id}/export.json`, { withAdminToken: true }),
+
+  // Blockchain anchoring (admin-only)
+  blockchainStatus: () =>
+    request("/blockchain/status", { withAdminToken: true }),
+  blockchainAnchorBatch: (batchId) =>
+    request(`/blockchain/anchors/${batchId}`, {
+      method: "POST",
+      withAdminToken: true,
+    }),
+  blockchainGetAnchor: (batchId) =>
+    request(`/blockchain/anchors/${batchId}`, { withAdminToken: true }),
 };
 
 function triggerBlobDownload(blob, filename) {

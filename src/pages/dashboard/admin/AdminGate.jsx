@@ -9,6 +9,7 @@ import { getAdminToken, setAdminToken } from "../../../auth/api.js";
 export default function AdminGate({ children }) {
   const [hasToken, setHasToken] = useState(() => !!getAdminToken());
   const [token, setToken] = useState("");
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     setHasToken(!!getAdminToken());
@@ -55,15 +56,39 @@ export default function AdminGate({ children }) {
         <form className="dash-form" onSubmit={arm}>
           <label className="full">
             Jeton X-Admin-Token
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              autoComplete="off"
-              autoFocus
-              required
-              placeholder="Collez ici la valeur de ADMIN_API_TOKEN"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={revealed ? "text" : "password"}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                autoComplete="off"
+                autoFocus
+                required
+                placeholder="Collez ici la valeur de ADMIN_API_TOKEN"
+                style={{ paddingRight: 64, width: "100%" }}
+              />
+              <button
+                type="button"
+                onClick={() => setRevealed((v) => !v)}
+                aria-label={revealed ? "Masquer le jeton" : "Afficher le jeton"}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  color: "var(--muted, #888)",
+                  padding: "4px 8px",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {revealed ? "Masquer" : "Voir"}
+              </button>
+            </div>
           </label>
           <div className="btn-row full">
             <button type="submit" className="btn">Activer la session admin <span>→</span></button>

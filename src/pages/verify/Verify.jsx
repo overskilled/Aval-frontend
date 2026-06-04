@@ -46,6 +46,11 @@ const I18N = {
       other: "Autre",
     },
     noToken: "Aucun code à vérifier. Scannez un QR Aval pour commencer.",
+    onchainTitle: "Preuve blockchain",
+    onchainVerified: "Vérifié sur la blockchain",
+    onchainPending: "Ancrage en cours de confirmation…",
+    onchainNotAnchored: "Pas encore ancré sur la blockchain",
+    onchainViewTx: "Voir la transaction ↗",
   },
   en: {
     brand: "Aval",
@@ -89,6 +94,11 @@ const I18N = {
       other: "Other",
     },
     noToken: "No code to verify. Scan an Aval QR to start.",
+    onchainTitle: "Blockchain proof",
+    onchainVerified: "Verified on-chain",
+    onchainPending: "Anchor confirmation pending…",
+    onchainNotAnchored: "Not anchored on-chain yet",
+    onchainViewTx: "View transaction ↗",
   },
 };
 
@@ -297,7 +307,59 @@ function ResultCard({ result, t, cardClass, lang }) {
           {result.status === "SUSPICIOUS" ? (
             <div className="vp-banner err">{t.bannerReportSuspicious}</div>
           ) : null}
+          <OnchainBlock onchain={result.onchain} t={t} />
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+function OnchainBlock({ onchain, t }) {
+  // Hide entirely when the integration is disabled on the server.
+  if (!onchain || !onchain.enabled) return null;
+
+  let label, color, icon;
+  if (onchain.valid) {
+    label = t.onchainVerified;
+    color = "#0a8a3f";
+    icon = "✓";
+  } else if (onchain.anchored) {
+    label = t.onchainPending;
+    color = "#a8741a";
+    icon = "⏳";
+  } else {
+    label = t.onchainNotAnchored;
+    color = "#666";
+    icon = "○";
+  }
+
+  return (
+    <div
+      className="vp-onchain"
+      style={{
+        marginTop: 18,
+        padding: 12,
+        border: `1px solid ${color}`,
+        borderRadius: 8,
+        background: "rgba(255,255,255,0.02)",
+      }}
+    >
+      <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--vp-muted, #888)", marginBottom: 6 }}>
+        ⛓ {t.onchainTitle}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color }}>
+        <span aria-hidden style={{ fontSize: 18 }}>{icon}</span>
+        <span>{label}</span>
+      </div>
+      {onchain.explorerUrl ? (
+        <a
+          href={onchain.explorerUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: "inline-block", marginTop: 8, fontSize: 13 }}
+        >
+          {t.onchainViewTx}
+        </a>
       ) : null}
     </div>
   );
